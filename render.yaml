@@ -1,0 +1,16 @@
+# Render Blueprint — auto-provisions the web service from this repo.
+# See https://render.com/docs/blueprint-spec for the full spec.
+
+services:
+  - type: web
+    name: denison-ops
+    env: node
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 20
