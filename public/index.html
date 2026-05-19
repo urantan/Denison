@@ -2811,76 +2811,13 @@ function renderDmCharts(readings) {
 let state = {
   role: 'supervisor',
   user: { id: 'DML-0001', name: 'M. Lambert' },
-  wells: [
-    // Active (3)
-    { id: 'WR-A-047', work: 'WR', zone: 'A', loc: '047', status: 'Active',   dateCreated: '2026-02-04' },
-    { id: 'WR-A-048', work: 'WR', zone: 'A', loc: '048', status: 'Active',   dateCreated: '2026-02-19' },
-    { id: 'WR-B-103', work: 'WR', zone: 'B', loc: '103', status: 'Active',   dateCreated: '2026-03-02' },
-    // Pending (3)
-    { id: 'WR-A-052', work: 'WR', zone: 'A', loc: '052', status: 'Pending',  dateCreated: '2026-04-10' },
-    { id: 'WR-B-107', work: 'WR', zone: 'B', loc: '107', status: 'Pending',  dateCreated: '2026-04-22' },
-    { id: 'WR-B-108', work: 'WR', zone: 'B', loc: '108', status: 'Pending',  dateCreated: '2026-05-03' },
-    // Complete (3) — marked Complete but no tasks logged → progress will be 0
-    { id: 'WR-A-051', work: 'WR', zone: 'A', loc: '051', status: 'Complete', dateCreated: '2025-11-14' },
-    { id: 'WR-B-101', work: 'WR', zone: 'B', loc: '101', status: 'Complete', dateCreated: '2025-10-22' },
-    { id: 'WR-B-102', work: 'WR', zone: 'B', loc: '102', status: 'Complete', dateCreated: '2025-12-08' },
-  ],
+  wells: [],
   tasks: [],
   readings: [],
   drillMetrics: [],
   shiftSummaries: [],
 };
 
-// === seed tasks: one Complete entry per (well × task category) = 9 × 10 = 90 ===
-(function seedTasks() {
-  let id = 1000;
-  // For each well, walk the 10 task categories in their natural execution order.
-  // Use each task's TASK_EXPECTATIONS window so dates are realistic and the
-  // Construction Output chart has data across the campaign timeline.
-  state.wells.forEach((well, wellIdx) => {
-    TASK_NAMES.forEach((taskName, taskIdx) => {
-      const exp = window.TASK_EXPECTATIONS[taskName] || { start: '2026-01-01', end: '2026-12-31' };
-      const start = new Date(exp.start);
-      const end   = new Date(exp.end);
-      const span  = Math.max(1, Math.round((end - start) / 86400000));
-      // Stagger each well's entry across the campaign window so the line chart shows movement
-      const offset = Math.floor((wellIdx / state.wells.length) * span);
-      const date = new Date(start); date.setDate(start.getDate() + offset);
-      const dateKey = date.toISOString().slice(0, 10);
-
-      // Reasonable per-task `actual` numbers so Drill PQ (total_actual) etc. read non-zero
-      let actual = 0;
-      if (taskName === 'Drill PQ')      actual = +(280 + Math.random() * 120).toFixed(1);   // ~340 m per well
-      else if (taskName === 'Survey')   actual = 1;
-      else if (taskName === 'Pressure Test') actual = +(45 + Math.random() * 30).toFixed(0); // minutes
-      else                              actual = +(4 + Math.random() * 6).toFixed(1);
-
-      // Duration (hours for most; minutes for Pressure Test)
-      let duration = 0;
-      if (taskName === 'Pressure Test') duration = actual; // minutes
-      else if (taskName === 'Drill PQ') duration = +(8 + Math.random() * 6).toFixed(1);
-      else                              duration = +(2 + Math.random() * 6).toFixed(1);
-
-      state.tasks.push({
-        id: 'T-' + (++id),
-        wellId: well.id,
-        task: taskName,
-        plannedStart: dateKey,
-        plannedEnd: dateKey,
-        duration,
-        expected: actual,  // placeholder; real expected is at task-category level
-        actual,
-        status: 'Complete',
-        state: 'Submitted',
-        logger: 'M. Lambert',
-        date: dateKey,
-        notes: '',
-        formData: {},
-      });
-    });
-  });
-  state.tasks.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
-})();
 
 
 
@@ -2890,7 +2827,7 @@ let state = {
    This is a demo affordance — in production, all of this is server-side.
 ============================================================ */
 const STORAGE_KEY = 'denison-ops-v3-state';
-const STORAGE_VERSION = 1; // bump if the shape changes incompatibly
+const STORAGE_VERSION = 2; // bump if the shape changes incompatibly
 
 // Load any saved state. If found, REPLACE the seeded defaults (state, wells,
 // tasks, etc.) and overlay any admin config tweaks. If not found, persist
